@@ -1,0 +1,48 @@
+# frozen_string_literal: true
+
+require 'json'
+require 'dotenv'
+require 'selenium-webdriver'
+require_relative 'lib/twitter'
+require_relative 'lib/facebook'
+
+Dotenv.load("#{__dir__}/.env")
+TWITTER_BEARER_TOKEN = ENV['TWITTER_BEARER_TOKEN']
+TWITTER_USER_ID = ENV['TWITTER_USER_ID']
+FACEBOOK_EMAIL = ENV['FACEBOOK_EMAIL']
+FACEBOOK_PASSWORD = ENV['FACEBOOK_PASSWORD']
+
+twitter_client = Twitter::Client.new(twitter_bearer_token: TWITTER_BEARER_TOKEN)
+tweets = twitter_client.tweets(twitter_user_id: TWITTER_USER_ID).slice(0, 10)
+if File.exist?("#{__dir__}/posted_tweet_ids.json")
+  posted_tweet_ids = File.open("#{__dir__}/posted_tweet_ids.json", 'r') { |file| JSON.parse(file.read)['ids'] }
+  tweets.reject! { |tweet| posted_tweet_ids.include?(tweet[:id]) }
+end
+
+return if tweets.length.zero?
+
+capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(
+  'goog:chromeOptions' => {
+    'args' => [
+      'headless',
+      'disable-gpu',
+      'lang=ja-JP',
+      'user-agent=Mozilla/5.0 (X11; CrOS armv7l 13597.84.0)' \
+                  ' AppleWebKit/537.36 (KHTML, like Gecko)' \
+                  ' Chrome/92.0.4515.98' \
+                  ' Safari/537.36',
+      "user-data-dir=#{__dir__}/user_data"
+    ]
+  }
+)
+driver = Selenium::WebDriver.for(:chrome, capabilities:)
+driver.manage.timeouts.implicit_wait = 10
+
+facebook_client = Facebook::Client.new(email: FACEBOOK_EMAIL, password: FACEBOOK_PASSWORD)
+driver = facebook_client.login(driver:)
+tweets.each { |tweet| driver = facebook_client.post(driver:, message: tweet[:text]) }
+
+posted_tweet_ids += tweets.map { |tweet| tweet[:id] }
+File.open("#{__dir__}/posted_tweet_ids.json", 'w') { |file| JSON.dump({ ids: posted_tweet_ids }, file) }
+
+driver.quit
