@@ -19,7 +19,7 @@ if File.exist?("#{__dir__}/posted_tweet_ids.json")
   tweets.reject! { |tweet| posted_tweet_ids.include?(tweet[:id]) }
 end
 
-return if tweets.length.zero?
+return if tweets.empty?
 
 capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(
   'goog:chromeOptions' => {
@@ -27,10 +27,12 @@ capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(
       'headless',
       'disable-gpu',
       'lang=ja-JP',
-      'user-agent=Mozilla/5.0 (X11; CrOS armv7l 13597.84.0)' \
-                  ' AppleWebKit/537.36 (KHTML, like Gecko)' \
-                  ' Chrome/92.0.4515.98' \
-                  ' Safari/537.36',
+      <<~USER_AGENT,
+        user-agent=Mozilla/5.0 (X11; CrOS armv7l 13597.84.0)
+        AppleWebKit/537.36 (KHTML, like Gecko)
+        Chrome/92.0.4515.98
+        Safari/537.36
+      USER_AGENT
       "user-data-dir=#{__dir__}/user_data"
     ]
   }
