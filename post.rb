@@ -51,7 +51,6 @@ begin
   File.open("#{__dir__}/posted_tweet_ids.json", 'w') { |file| JSON.dump({ ids: posted_tweet_ids }, file) }
 
   driver.quit
-  Sentry.capture_message('Success', level: :info)
 rescue StandardError => e
   Sentry.capture_exception(e)
 end
