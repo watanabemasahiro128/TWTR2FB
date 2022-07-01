@@ -41,7 +41,13 @@ module Facebook
       end
       driver.action.key_down(:enter).perform
       sleep 1
-      driver.find_element(:xpath, '//textarea[@id="uniqid_1"]').send_keys(message)
+      input = driver.find_element(:xpath, '//textarea[@id="uniqid_1"]').find_element(:xpath, '..').find_element(:tag_name, 'input')
+      driver.execute_script(<<~JAVASCRIPT, input, message)
+        const element = arguments[0];
+        element.value = arguments[1];
+        element.dispatchEvent(new Event("change"));
+      JAVASCRIPT
+      sleep 1
       driver.action.move_to_location(0, 0).click.perform
       sleep 1
       driver.action.key_down(:tab).perform
